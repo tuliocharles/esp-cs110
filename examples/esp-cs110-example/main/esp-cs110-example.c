@@ -2,9 +2,9 @@
 #include "esp-cs110.h"
 
 #define reset_device    16
-#define uri_default     "mqtt://efm2com:efm2com@node02.myqtthub.com:1883"
-#define unique_topic    "com2efm4"
-#define clientID_x      "efm2com4"
+#define uri_default     "mqtt://user:password@broker.com:1883"
+#define unique_topic    "topic0"
+#define clientID_x      "cliente_1"
 #define num_modulo      4
 
 void app_main(void)

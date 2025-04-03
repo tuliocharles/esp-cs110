@@ -180,19 +180,11 @@ static void log_error_if_nonzero(const char *message, int error_code)
 static void mqtt_app_start(char *uri)
 
 {
-
-         
-  
     esp_mqtt_client_config_t mqtt_cfg = {
-        //.broker.address.uri = "mqtt://efm2com:efm2com@node02.myqtthub.com:1883",
         .credentials.client_id = clientID_x,
-        .broker.address.uri = uri, //"mqtt://0.tcp.sa.ngrok.io:15947",
-       //.broker.address.uri = "mqtt://192.168.0.7:1883", 
+        .broker.address.uri = uri, 
     };
 
-    //free(uri_from_nvs_temp);
-
-   
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
@@ -225,23 +217,13 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     case MQTT_EVENT_CONNECTED:
         
         ESP_LOGI(TAGMQTT, "MQTT_EVENT_CONNECTED");
-        //msg_id = esp_mqtt_client_publish(client, "/topic/qos1", "data_3", 0, 1, 0);
-        //ESP_LOGI(TAGMQTT, "sent publish successful, msg_id=%d", msg_id);
-
+        
         msg_id = esp_mqtt_client_subscribe(client, "com2efm", qos_ex);
         ESP_LOGI(TAGMQTT, "sent subscribe successful, msg_id=%d", msg_id);
-
 
         msg_id = esp_mqtt_client_subscribe(client, unique_topic, qos_ex);
         ESP_LOGI(TAGMQTT, "sent subscribe successful, msg_id=%d", msg_id);
 
-/*        msg_id = esp_mqtt_client_subscribe(client, "/cor/2", 0);
-        ESP_LOGI(TAGMQTT, "sent subscribe successful, msg_id=%d", msg_id);
-
-        
-*/
-
-        //bloco adicionado
         msg_id = esp_mqtt_client_subscribe(client, "red_button", qos_ex);  
         ESP_LOGI(TAGMQTT, "sent subscribe successful, msg_id=%d", msg_id);
 
@@ -250,10 +232,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
         msg_id = esp_mqtt_client_subscribe(client, "serial", qos_ex);  
         ESP_LOGI(TAGMQTT, "sent subscribe successful, msg_id=%d", msg_id);
-
-
-        
-        //gpio_set_level(GPIO_OUTPUT_IO_0, 1);
 
         status.conected = true;
         status.time_disconected = 0;  
@@ -268,14 +246,10 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         status.time_disconected = 0;  
         xQueueSendFromISR(status_mqtt_queue,&status, 0);
 
-        //gpio_set_level(GPIO_OUTPUT_IO_0, 0);
-        
         break;
 
     case MQTT_EVENT_SUBSCRIBED:
         ESP_LOGI(TAGMQTT, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-        //msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
-        //ESP_LOGI(TAGMQTT, "sent publish successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_UNSUBSCRIBED:
         ESP_LOGI(TAGMQTT, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
@@ -289,7 +263,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         printf("DATA=%.*s\r\n", event->data_len, event->data);
 
         ESP_LOG_BUFFER_HEXDUMP(TAGMQTT,  event->data, event->data_len, ESP_LOG_INFO);
-
 
         if (strcmpr_tc ( event->topic, "red_button", strlen("red_button") ) ) {
             
@@ -307,12 +280,9 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             printf("Restarting now.\n");
             fflush(stdout);
             esp_restart();
-
-                
             
             } else if (strcmpr_tc ( event->topic, "config", strlen("config") ) ) {
 
-                // passa por fila o valor recebido convertido para inteiro para main. 
                 uint32_t num_reset = 0;
                 char *x = malloc(5);
                 snprintf(x, 5, "%.*s", event->data_len, event->data);
@@ -343,42 +313,13 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
                 
                 }
                 
-                
                 free(new_baud_temp);
-                
-
-
 
             }else {
 
                 uart_write_bytes(UART_NUM_1, event->data, event->data_len);
 
             }
-
-        
-
-/*        pwmqtt_element_t mqtt_pwm = {
-            .num = 0,
-            .basic_duty = 0,
-        };
-
-        char *x = malloc(5);
-        snprintf(x, 5, "%.*s", event->data_len, event->data);
-        mqtt_pwm.basic_duty = atoi(x);
-
-        if (strcmpr_tc ( event->topic, "/cor/1", strlen("/cor/1") ) ) {
-                mqtt_pwm.num = 1;
-                
-            }
-
-            if (strcmpr_tc ( event->topic, "/cor/2", strlen("/cor/2") ) ) {
-                mqtt_pwm.num = 2;
-            }
-
-        xQueueSendFromISR(mqtt_queue,&mqtt_pwm, 0);    
-*/
-
-        
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAGMQTT, "MQTT_EVENT_ERROR");
@@ -387,7 +328,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             log_error_if_nonzero("reported from tls stack", event->error_handle->esp_tls_stack_err);
             log_error_if_nonzero("captured as transport's socket errno",  event->error_handle->esp_transport_sock_errno);
             ESP_LOGI(TAGMQTT, "Last errno string (%s)", strerror(event->error_handle->esp_transport_sock_errno));
-
         }
         break;
     default:
@@ -405,7 +345,6 @@ static void uart_task(void *arg)
     init_uart();
     uint8_t* data = (uint8_t*) malloc(RX_BUF_SIZE+1);
 
-    //rtc_element_t rtc_serial;
     while (1) {
         const int rxBytes = uart_read_bytes(UART_NUM_1, data, RX_BUF_SIZE, 10 / portTICK_PERIOD_MS);
         if (rxBytes > 0) {
@@ -413,24 +352,11 @@ static void uart_task(void *arg)
             ESP_LOGI(TAGUART, "Read %d bytes: '%s'", rxBytes, data);
             ESP_LOG_BUFFER_HEXDUMP(TAGUART, data, rxBytes, ESP_LOG_INFO);
 
-//          rtc_serial.hours = (data[0]-0x30)*10+ (data[1]-0x30);
-//            rtc_serial.minutes = (data[2]-0x30)*10+ (data[3]-0x30);  
-//            rtc_serial.seconds = (data[4]-0x30)*10+ (data[5]-0x30);  
-
-
-//            xQueueSendToBack(rtc_queue,&rtc_serial,0);
-
-
-            //uart_write_bytes(UART_NUM_1, data, rxBytes);
-           // printf("ok\n");
-
-           
            esp_mqtt_client_publish(client, "efm2com", (char *)data, rxBytes, qos_ex, 0);
                 
 
            
         }
-       // printf("fora\n");
     }
     free(data);
 }
