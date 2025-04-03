@@ -1,0 +1,25 @@
+license: MIT
+
+description: cs110 MQTT comunication
+
+url: https://github.com/tuliocharles/esp-Loggernet
+repository: https://github.com/tuliocharles/esp-Loggernet.git
+
+maintainers:
+  - "Túlio Carvalho <tulio.cefetmg@gmail.com>"
+
+dependencies:
+  idf: ">=4.4"
+  espressif/esp_wifi_remote:
+    version: ">=0.1.12"
+    rules:
+      - if: "target in [esp32p4, esp32h2]"
+
+files:
+  excludes:
+    - build/
+    - sdkconfig
+    - "**/dependencies.lock"
+    - .vscode/
+
+  
